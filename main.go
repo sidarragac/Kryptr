@@ -21,6 +21,7 @@ func main() {
 	eFlag := flag.Bool("e", false, "Encriptar archivo")
 	uFlag := flag.Bool("u", false, "Desencriptar archivo")
 	iFlag := flag.String("i", "", "Ruta del archivo o directorio de entrada")
+	oFlag := flag.String("o", "", "Ruta del archivo o directorio de salida")
 
 	flag.Parse()
 
@@ -52,7 +53,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			recorrerDir(*iFlag, fd, *cFlag, *dFlag, *eFlag, *uFlag, &wg, sem)
+			recorrerDir(*iFlag, fd, *cFlag, *dFlag, *eFlag, *uFlag, *oFlag, &wg, sem)
 		}()
 
 		wg.Wait()
@@ -61,14 +62,14 @@ func main() {
 	}
 
 	// Si es archivo → procesar directamente
-	procesarArchivo(*iFlag, *cFlag, *dFlag, *eFlag, *uFlag)
+	procesarArchivo(*iFlag, *oFlag, *cFlag, *dFlag, *eFlag, *uFlag)
 }
 
 // ----------------------------------------------------------------------
 // FUNCIONES DE PROCESAMIENTO
 // ----------------------------------------------------------------------
 
-func procesarArchivo(path string, c, d, e, u bool) {
+func procesarArchivo(path string, out string, c, d, e, u bool) {
 	if c {
 		comprimir(path)
 	}
@@ -76,10 +77,10 @@ func procesarArchivo(path string, c, d, e, u bool) {
 		descomprimir(path)
 	}
 	if e {
-		encriptar(path)
+		Encriptar(path, out)
 	}
 	if u {
-		desencriptar(path)
+		Desencriptar(path, out)
 	}
 }
 
@@ -91,6 +92,7 @@ func descomprimir(file string) {
 	fmt.Println("Descomprimiendo " + file)
 }
 
+/*
 func encriptar(file string) {
 	fmt.Println("Encriptando " + file)
 }
@@ -98,12 +100,13 @@ func encriptar(file string) {
 func desencriptar(file string) {
 	fmt.Println("Desencriptando " + file)
 }
+*/
 
 // ----------------------------------------------------------------------
 // FUNCIONES DE EXPLORACIÓN CON SYSCALL
 // ----------------------------------------------------------------------
 
-func recorrerDir(path string, fd int, c, d, e, u bool, wg *sync.WaitGroup, sem chan struct{}) {
+func recorrerDir(path string, fd int, c, d, e, u bool, out string, wg *sync.WaitGroup, sem chan struct{}) {
 	buf := make([]byte, 4096)
 	for {
 		n, _, errno := syscall.Syscall(syscall.SYS_GETDENTS64, uintptr(fd), uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
@@ -129,21 +132,21 @@ func recorrerDir(path string, fd int, c, d, e, u bool, wg *sync.WaitGroup, sem c
 					// archivo regular
 					wg.Add(1)
 					sem <- struct{}{}
-					go func(p string) {
+					go func(p, out string) {
 						defer wg.Done()
 						defer func() { <-sem }()
-						procesarArchivo(p, c, d, e, u)
-					}(fullPath)
+						procesarArchivo(p, out, c, d, e, u)
+					}(fullPath, out)
 				} else if dirent.Type == syscall.DT_DIR {
 					// subdirectorio → recursión
 					subFd, err := syscall.Open(fullPath, syscall.O_RDONLY|syscall.O_DIRECTORY, 0)
 					if err == nil {
 						wg.Add(1)
-						go func(p string, f int) {
+						go func(p string, f int, out string) {
 							defer wg.Done()
-							recorrerDir(p, f, c, d, e, u, wg, sem)
+							recorrerDir(p, f, c, d, e, u, out, wg, sem)
 							syscall.Close(f)
-						}(fullPath, subFd)
+						}(fullPath, subFd, out)
 					}
 				}
 			}
