@@ -1,3 +1,3 @@
-module ejemplo
+module kryptr
 
 go 1.22
