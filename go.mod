@@ -1,5 +1,3 @@
-module ejemplo
+module kryptr
 
-go 1.25.1
-
-require golang.org/x/sys v0.37.0 // indirect
+go 1.22

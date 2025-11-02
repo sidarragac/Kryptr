@@ -30,3 +30,12 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# BINARIES
+main
+encrypt
+
+# Example files
+*.txt
+*.kry
+*.dec
