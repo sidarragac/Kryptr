@@ -38,3 +38,4 @@ encrypt
 # Example files
 *.txt
 *.kry
+*.dec
