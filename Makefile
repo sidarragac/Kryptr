@@ -22,11 +22,11 @@ $(MAIN_BIN): main.go
 
 # Ejecutar encrypt
 run-encrypt: $(ENCRYPT_BIN) $(MAIN_BIN)
-	./$(MAIN_BIN) -e -i $(in) -o $(out)
+	./$(MAIN_BIN) -e -i $(in) -o $(out)/
 
 # Ejecutar decrypt
 run-decrypt: $(ENCRYPT_BIN) $(MAIN_BIN)
-	./$(MAIN_BIN) -u -i $(in) -o $(out)
+	./$(MAIN_BIN) -u -i $(in) -o $(out)/
 
 # Limpiar ejecutables
 clean:
