@@ -6,6 +6,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -71,10 +75,10 @@ func main() {
 
 func procesarArchivo(path string, out string, c, d, e, u bool) {
 	if c {
-		comprimir(path)
+		comprimir(path, out)
 	}
 	if d {
-		descomprimir(path)
+		descomprimir(path, out)
 	}
 	if e {
 		Encriptar(path, out)
@@ -84,12 +88,110 @@ func procesarArchivo(path string, out string, c, d, e, u bool) {
 	}
 }
 
-func comprimir(file string) {
+func comprimir(file string, out string) {
 	fmt.Println("Comprimiendo " + file)
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		fmt.Printf("Error leyendo %s: %v\n", file, err)
+		return
+	}
+
+	fmt.Printf("Tamaño original: %d bytes\n", len(data))
+
+	// empaquetar incluyendo nombre original
+	compressed := PackWithMeta(data, filepath.Base(file))
+	fmt.Printf("Tamaño comprimido: %d bytes\n", len(compressed))
+
+	// determinar ruta de salida (.bin por defecto)
+	outPath := out
+	if outPath == "" {
+		// reemplazar extensión por .bin
+		ext := filepath.Ext(file)
+		if ext == "" {
+			outPath = file + ".bin"
+		} else {
+			outPath = strings.TrimSuffix(file, ext) + ".bin"
+		}
+	} else {
+		// si out es un directorio, usar basename sin extensión + .bin
+		fi, err := os.Stat(outPath)
+		if err == nil && fi.IsDir() {
+			base := filepath.Base(file)
+			ext := filepath.Ext(base)
+			name := strings.TrimSuffix(base, ext)
+			outPath = filepath.Join(outPath, name+".bin")
+		}
+	}
+
+	if err := ioutil.WriteFile(outPath, compressed, 0644); err != nil {
+		fmt.Printf("Error escribiendo %s: %v\n", outPath, err)
+		return
+	}
+	fmt.Printf("Guardado: %s\n", outPath)
 }
 
-func descomprimir(file string) {
+func descomprimir(file string, out string) {
 	fmt.Println("Descomprimiendo " + file)
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		fmt.Printf("Error leyendo %s: %v\n", file, err)
+		return
+	}
+
+	// intentar extraer metadata
+	origName, payload := UnpackWithMeta(data)
+	decompressed := huffmanDecompress(payload)
+	if decompressed == nil {
+		fmt.Printf("Error: no se pudo descomprimir %s\n", file)
+		return
+	}
+	fmt.Printf("Tamaño comprimido (entrada): %d bytes\n", len(data))
+	fmt.Printf("Tamaño descomprimido: %d bytes\n", len(decompressed))
+	outPath := out
+	if outPath == "" {
+		if origName != "" {
+			outPath = filepath.Join(filepath.Dir(file), origName)
+		} else {
+			// intentar restaurar nombre original quitando sufijo conocido
+			suffixes := []string{".bin", ".kry", ".huff"}
+			restored := ""
+			for _, s := range suffixes {
+				if strings.HasSuffix(file, s) {
+					restored = strings.TrimSuffix(file, s)
+					break
+				}
+			}
+			if restored != "" {
+				outPath = restored
+			} else {
+				outPath = file + ".dec"
+			}
+		}
+	} else {
+		fi, err := os.Stat(outPath)
+		if err == nil && fi.IsDir() {
+			// si es directorio, preferir el nombre original si está en la metadata
+			if origName != "" {
+				outPath = filepath.Join(outPath, origName)
+			} else {
+				// intentar usar basename sin sufijo
+				base := filepath.Base(file)
+				for _, s := range []string{".bin", ".kry", ".huff"} {
+					if strings.HasSuffix(base, s) {
+						base = strings.TrimSuffix(base, s)
+						break
+					}
+				}
+				outPath = filepath.Join(outPath, base)
+			}
+		}
+	}
+
+	if err := ioutil.WriteFile(outPath, decompressed, 0644); err != nil {
+		fmt.Printf("Error escribiendo %s: %v\n", outPath, err)
+		return
+	}
+	fmt.Printf("Guardado: %s\n", outPath)
 }
 
 /*
