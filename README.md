@@ -15,6 +15,5 @@ Desarrollado por:
 Para garantizar una fácil ejecución, se creó un `Makefile`, luego en una terminal, el proceso de ejecución va así:
 - Para Encriptar: Ejecuta `make run-encrypt in={test_in} out={test_out}`. *test_in* es la carpeta donde se ubican los archivos a encriptar y *test_out* es la carpeta donde se guardan los archivos encriptados.
 - Para Desncriptar: Ejecuta `make run-decrypt in={test_in} out={test_out}`. *test_in* es la carpeta donde se ubican los archivos a desencriptar y *test_out* es la carpeta donde se guardan los archivos desencriptados.
-
-## Funcionalidades Pendientes:
-- Se debe desarrollar un algoritmo para compresión y descompresión de archivos.
+- Para Comprimir: Ejecuta `make run-compress in={test_in} out={test_out}`. *test_in* es la carpeta donde se ubican los archivos a comprimir y *test_out* es la carpeta donde se guardan los archivos comprimidos.
+- Para Descomprimir: Ejecuta `make run-decompress in={test_in} out={test_out}`. *test_in* es la carpeta donde se ubican los archivos a descomprimir y *test_out* es la carpeta donde se guardan los archivos descomprimir.
