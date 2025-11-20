@@ -4,6 +4,7 @@ MODULE = kryptr
 
 # Ejecutables
 ENCRYPT_BIN = encrypt
+COMPRESS_BIN = compress
 MAIN_BIN = main
 
 # Comandos
@@ -12,10 +13,13 @@ GO = go
 all: build
 
 # Compilar ambos binarios
-build: $(ENCRYPT_BIN) $(MAIN_BIN)
+build: $(ENCRYPT_BIN) $(COMPRESS_BIN) $(MAIN_BIN)
 
 $(ENCRYPT_BIN): encrypt.go
 	$(GO) build -o $(ENCRYPT_BIN)
+	
+$(COMPRESS_BIN): compress.go
+	$(GO) build -o $(COMPRESS_BIN)
 
 $(MAIN_BIN): main.go
 	$(GO) build -o $(MAIN_BIN)
@@ -28,6 +32,12 @@ run-encrypt: $(ENCRYPT_BIN) $(MAIN_BIN)
 run-decrypt: $(ENCRYPT_BIN) $(MAIN_BIN)
 	./$(MAIN_BIN) -u -i $(in) -o $(out)/
 
+run-compress: $(COMPRESS_BIN) $(MAIN_BIN)
+	./$(MAIN_BIN) -c -i $(in) -o $(out)/
+
+run-decompress: $(COMPRESS_BIN) $(MAIN_BIN)
+	./$(MAIN_BIN) -d -i $(in) -o $(out)/
+
 # Limpiar ejecutables
 clean:
-	rm -f $(ENCRYPT_BIN) $(MAIN_BIN)
+	rm -f $(ENCRYPT_BIN) $(COMPRESS_BIN) $(MAIN_BIN)
